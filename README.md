@@ -51,7 +51,7 @@ token_auth  | (leave blank)    | (leave blank)    |
 ### Viewing the app ###
 
     Open the following url on your browser to view swagger documentation
-    http://127.0.0.1:5000/
+    http://127.0.0.1:5000/ or http://localhost/
 
 
 ### Users ###
