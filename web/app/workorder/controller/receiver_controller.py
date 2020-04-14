@@ -3,11 +3,12 @@ from flask_restplus import Resource
 
 from app.main.util.decorator import token_required
 from ..util.dto import ReceiverDto
-from ..service.receiver_service import save_new_workorder
+from ..service.receiver_service import ReceiverService
 
 api = ReceiverDto.api
 _receiver = ReceiverDto.receiver
 
+_ReceiverService = ReceiverService()
 
 @api.route('/')
 class Receiver(Resource):
@@ -16,4 +17,5 @@ class Receiver(Resource):
     def post(self):
         """Creates a new User """
         data = request.json
-        return save_new_workorder(data=data)
+        return _ReceiverService.save_new_workorder(data=data)
+
