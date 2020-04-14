@@ -1,6 +1,6 @@
-#### FLASK MODULAR RESTFUL With Docker Compose
+# FLASK MODULAR RESTFUL With Docker Compose
 
-### Overview
+## Overview
 
 A modular restful api made from flask restplus, and already docker containerized.
 
@@ -10,7 +10,7 @@ Requirements:
 - Python 3.7
 - Flask (latest)
 
-### Notes
+## Notes
 
 - Please see .env file for database configuration
 - No need to import dummy database it wll be handled by `docker-compose`
@@ -18,7 +18,7 @@ Requirements:
 - - If you bring up your docker in background please use `docker-compose logs` to peek on console
 
 
-### Local Dev Instructions
+## Local Dev Instructions
 
 1. Install docker from this tutorial https://docs.docker.com/install/
 1. Extract the files on your workspace - `/<path_to_workspace>/dockerize_flask_modular_restplus`
@@ -29,7 +29,7 @@ Requirements:
 1. Always run mmigration for new tables ` docker exec -it dockerize_flask_modular_restplus_web_1 /usr/local/bin/python manage.py migrate`
 1. Test scripts are available, `docker exec -it dockerize_flask_modular_restplus_web_1 /usr/local/bin/python manage.py test`
 
-### Restful API
+## Restful API
 1. Go to https://documenter.getpostman.com/view/6907051/SzezdXyz?version=latest and Click "Run in postman"
 1. If your postman opens choose "Flask Modular RestPlus | Local" as environment to your top right corner
 1. If the 2 above does not work, proceed below to the manual
@@ -48,7 +48,13 @@ host        | localhost        | localhost        |
 token_auth  | (leave blank)    | (leave blank)    |
 ```
 
-### Users
+### Viewing the app ###
+
+    Open the following url on your browser to view swagger documentation
+    http://127.0.0.1:5000/
+
+
+### Users ###
 
 Create a user by POSTing to api `/user`, using curl or anything you are comfortable
 with body
@@ -59,20 +65,6 @@ with body
     "password":"admin"
 }
 ```
-
-### TROUBLESHOOTING
-
-- If nginx is running then stop it because docker web container will listen to port 80
-- If postgresql is running then stop it because docker postgresql container will listen to port 5432
-- If using VirtualBox from windows you should mount you files properly for permission correction - `mount -t vboxsf -o rw,uid=1000,gid=1000 <share_name> <mount_path>`
-- Local host url - `localhost`
-
-
-### Viewing the app ###
-
-    Open the following url on your browser to view swagger documentation
-    http://127.0.0.1:5000/
-
 
 ### Using Postman ####
 
@@ -85,6 +77,14 @@ with body
     user by public_id requires just a regular authentication.
 
     NOTE: Authorization header is automatically updated in POSTMAN variable `token_auth` if you login using POSTMAN :)
+
+
+### TROUBLESHOOTING
+
+- If nginx is running then stop it because docker web container will listen to port 80
+- If postgresql is running then stop it because docker postgresql container will listen to port 5432
+- If using VirtualBox from windows you should mount you files properly for permission correction - `mount -t vboxsf -o rw,uid=1000,gid=1000 <share_name> <mount_path>`
+- Local host url - `localhost`
 
 
 ### Idea came from ###
