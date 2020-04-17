@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 
-from app.redis.service.abstract_service import AbstractService
+from app.main.service.abstract_service import AbstractService
 from app.redis.service.redis_service import SetQueue
 
 
