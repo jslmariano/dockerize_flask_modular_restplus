@@ -67,7 +67,9 @@ class SetQueue(object):
         """
         Redis instance connection
         """
-        self.r = redis.Redis(host=host, port=port, charset="utf-8", decode_responses=True)
+        self.r = redis.Redis(host=host, port=port,
+                             charset="utf-8", decode_responses=True)
+        print(redis.__file__)
         """
         Redis queue name
         """
@@ -91,8 +93,17 @@ class SetQueue(object):
         """Pop an element from the head of the queue"""
         return self._zpop()
 
-    def get_all(self, total_limit = 10):
-        """Get a range of elements from the head of the queue with default limit of 10"""
+    def get_all(self, total_limit = 10) -> list:
+        """
+        Get a range of elements from the head of the queue with default limit of
+        10
+
+        :param      total_limit:  The total limit
+        :type       total_limit:  number
+
+        :returns:   All.
+        :rtype:     list
+        """
         return self._zrange(total_limit)
 
     def _zaddnx(self, element):
@@ -144,10 +155,16 @@ class SetQueue(object):
 
     def _zrange(self, total_limit = 10):
         """
-        Get a range of elements from the head of the queue with default limit of 10
+        Get a range of elements from the head of the queue with default limit of
+        10
 
+        :param      total_limit:  The total limit
+        :type       total_limit:  number
         :param      element:  The element
         :type       element:  list
+
+        :returns:   { description_of_the_return_value }
+        :rtype:     { return_type_description }
         """
         pipe = self.r.pipeline()
         while 1:

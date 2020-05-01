@@ -27,7 +27,8 @@ class SampleQueue(AbstractService):
             self.queue.push(str(json.dumps(data)).encode('utf8'))
         except Exception as e:
             raise e
-            return self.return_fail(f"Failed inserting data to redis : {str(e)}")
+            return self.return_fail("Failed inserting data to redis : "
+                                    f"{str(e)}")
         finally:
             return self.return_created("Sucesfully saved to redis pipeline")
 
