@@ -172,7 +172,7 @@ jobs:
       shell: bash
       id: current_repo
       run: |-
-        export result=$(github.repository)
+        export result=${{ github.repository }}
         echo $result
         echo "##[set-output name=auth_path]$(echo $result)"
 
