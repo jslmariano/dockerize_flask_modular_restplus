@@ -71,9 +71,10 @@ jobs:
       shell: bash
       id: staging_vm_status
       run: |-
-        echo "##[set-output name=status;]$(echo $(gcloud compute instances list \
+        export result=$(gcloud compute instances list \
                   --filter="name:($STAGING_NAME)" \
-                  --format="value(status)"))"
+                  --format="value(status)")
+        echo "##[set-output name=status;]$(echo $result)"
 
     # Preview status
     - name: Preview staging status
@@ -114,17 +115,19 @@ jobs:
       shell: bash
       id: staging_vm_ip
       run: |-
-        echo "##[set-output name=nat_ip;]$(echo $(gcloud compute instances describe $STAGING_NAME \
+        export result=$(gcloud compute instances describe $STAGING_NAME \
                 --zone=$ZONE \
                 --format="value(networkInterfaces.accessConfigs[0].natIP)")
+        echo "##[set-output name=nat_ip;]$(echo $result)"
 
     - name: Getting staging firewall status
       shell: bash
       id: staging_firewall_status
       run: |-
-        echo "##[set-output name=disabled;]$(echo $(gcloud compute firewall-rules list \
+        export result=$(gcloud compute firewall-rules list \
                 --filter="name:($STAGING_ALLOW_TAG)" \
                 --format="value(disabled)")
+        echo "##[set-output name=disabled;]$(echo $result)"
 
     # Patch firewall
     - name: Patching up staging firewall
