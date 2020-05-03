@@ -46,8 +46,6 @@ jobs:
 
     # VALIDATION
     - name: Validate secrets
-      shell: bash
-      id: extract_branch
       run: |-
         echo "Validating required secrets"
         declare -a secret_names=(
