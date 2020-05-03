@@ -136,6 +136,11 @@ jobs:
         export STAGING_IP=${{ steps.staging_vm_ip.outputs.nat_ip }}
         export TEMP_IP=${{ steps.github_ip.outputs.ip }}
 
+        if [[ -z $STAGING_IP ]]; then
+            echo "ERROR! Missing staging external ip!"
+            exit 1
+        fi
+
         if [ -z "$STAGING_FIREWALL_DISABLED" ]; then
             echo "Staging firewall does not exists!, now creating..."
             gcloud compute firewall-rules create $STAGING_ALLOW_TAG \
