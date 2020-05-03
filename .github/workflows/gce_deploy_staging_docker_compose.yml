@@ -80,3 +80,4 @@ jobs:
       run: |-
         echo "Just passing"
         #gcloud compute instances start --project $PROJECT_ID --zone $GCE_INSTANCE_ZONE $GCE_INSTANCE
+
