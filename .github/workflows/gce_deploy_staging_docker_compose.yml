@@ -28,7 +28,10 @@ env:
   ZONE: asia-east1-b
   STAGING_NAME: staging-docker
   STAGING_ALLOW_TAG: allow-ssh-staging-from-github
-  STAGING_CUSTOM_SSH_PORT: 1369
+  # You should remember this port, if not remembered,
+  # Go to your GCP firewall rules and check tcp value,
+  # or just re-create new STAGING_CUSTOM_SSH_PORT in GITHUB SECRETS
+  STAGING_CUSTOM_SSH_PORT: ${{ secrets.STAGING_CUSTOM_SSH_PORT }}
 
 jobs:
   create-staging-ssh-deploy:
@@ -160,7 +163,8 @@ jobs:
 
         echo "Patching staging firewall.."
         gcloud compute firewall-rules update $STAGING_ALLOW_TAG \
-              --source-ranges $STAGING_IP,$TEMP_IP
+              --source-ranges $STAGING_IP,$TEMP_IP \
+              --allow tcp:$STAGING_CUSTOM_SSH_PORT
         echo "Done patching staging firewall.."
 
 
