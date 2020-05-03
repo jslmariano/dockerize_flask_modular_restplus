@@ -58,7 +58,7 @@ jobs:
 
         for name in "${secret_names[@]}"; do
             secret_name="secrets.${name}"
-            echo ${{ secret_name }}
+            echo ${{ $secret_name }}
         done
 
 
