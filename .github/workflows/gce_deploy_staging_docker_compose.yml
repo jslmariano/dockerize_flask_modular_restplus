@@ -26,7 +26,7 @@ env:
   VPC_SUBNET: bc-asia-east1
   REGION: asia-east1
   ZONE: asia-east1-b
-  STAGING_NAME: app-docker
+  STAGING_NAME: staging-docker
   STAGING_ALLOW_TAG: allow-ssh-staging-from-github
   STAGING_CUSTOM_SSH_PORT: 1369
 
