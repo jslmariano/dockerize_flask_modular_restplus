@@ -60,10 +60,6 @@ jobs:
 
         for name in "${secret_names[@]}"; do
             echo $name
-            # if [[ -z ${{ secrets.$name }} ]]; then
-            #     echo "ERROR! Missing or empty secret [ $name ]!"
-            #     exit 1
-            # fi
         done
 
 
