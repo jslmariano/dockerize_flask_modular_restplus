@@ -1,0 +1,74 @@
+# Copyright 2020 Google, LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: GCE create staging vm and deploy app with docker compose
+
+on:
+  push:
+    branches:
+    - deploy/**
+
+env:
+  PROJECT_ID: ${{ secrets.GCE_PROJECT }}
+  BASTION_IP: ${{ secrets.FIELDMAN_TEST_BASTION_IP }}
+  # TODO: update to instance name
+  VPC_NETWORK: batcave
+  VPC_SUBNET: bc-asia-east1
+  REGION: asia-east1
+  ZONE: asia-east1-b
+  STAGING_NAME: staging-docker
+  STAGING_ALLOW_TAG: allow-ssh-staging-from-github
+  STAGING_CUSTOM_SSH_PORT: 1369
+
+jobs:
+  create-staging-ssh-deploy:
+    name: Create, Staging, SSH, and Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Extract branch name
+      shell: bash
+      id: extract_branch
+      run: echo "##[set-output name=branch;]$(echo $(gcloud compute instances list \
+                  --filter="name:($STAGING_NAME)" \
+                  --format="value(status)"))"
+
+    - name: Getting staging vm status
+      shell: bash
+      id: staging_vm_status
+      run: |-
+        echo "##[set-output name=status;]$(echo ${GITHUB_REF#refs/heads/deploy/})"
+
+    # Update GCP firewall
+    - name: Preview current branch
+      run: |-
+        echo "current branch:  ${{ steps.extract_branch.outputs.branch }}"
+
+    # Setup gcloud CLI
+    - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      with:
+        version: '286.0.0'
+        service_account_email: ${{ secrets.GCE_SA_EMAIL }}
+        service_account_key: ${{ secrets.GCE_SA_KEY }}
+        project_id: ${{ secrets.GCE_PROJECT }}
+
+    # Start instance
+    - name: Bringing up instance
+      run: |-
+        gcloud compute instances start --project $PROJECT_ID --zone $GCE_INSTANCE_ZONE $GCE_INSTANCE
