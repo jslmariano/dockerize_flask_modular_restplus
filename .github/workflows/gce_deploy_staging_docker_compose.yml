@@ -156,10 +156,11 @@ jobs:
 
     # Patch firewall
     - name: Patching up staging firewall
+      env:
+        STAGING_FIREWALL_DISABLED: ${{ steps.staging_firewall_status.outputs.disabled }}
+        STAGING_IP: ${{ steps.staging_vm_ip.outputs.nat_ip }}
+        TEMP_IP: ${{ steps.github_ip.outputs.ip }}
       run: |-
-        export STAGING_FIREWALL_DISABLED=${{ steps.staging_firewall_status.outputs.disabled }}
-        export STAGING_IP=${{ steps.staging_vm_ip.outputs.nat_ip }}
-        export TEMP_IP=${{ steps.github_ip.outputs.ip }}
 
         if [[ -z $STAGING_IP ]]; then
             echo "ERROR! Missing staging external ip!"
