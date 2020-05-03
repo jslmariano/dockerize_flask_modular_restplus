@@ -45,17 +45,10 @@ jobs:
     - name: Extract branch name
       shell: bash
       id: extract_branch
-      run: echo "##[set-output name=branch;]$(echo $(gcloud compute instances list \
-                  --filter="name:($STAGING_NAME)" \
-                  --format="value(status)"))"
-
-    - name: Getting staging vm status
-      shell: bash
-      id: staging_vm_status
       run: |-
-        echo "##[set-output name=status;]$(echo ${GITHUB_REF#refs/heads/deploy/})"
+        echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/deploy/})"
 
-    # Update GCP firewall
+    # Preview
     - name: Preview current branch
       run: |-
         echo "current branch:  ${{ steps.extract_branch.outputs.branch }}"
@@ -68,7 +61,22 @@ jobs:
         service_account_key: ${{ secrets.GCE_SA_KEY }}
         project_id: ${{ secrets.GCE_PROJECT }}
 
+    - name: Getting staging vm status
+      shell: bash
+      id: staging_vm_status
+      run: |-
+        echo "##[set-output name=status;]$(echo $(gcloud compute instances list \
+                  --filter="name:($STAGING_NAME)" \
+                  --format="value(status)"))"
+
+    # Preview
+    - name: Preview staging status
+      run: |-
+        echo "current status:  ${{ steps.staging_vm_status.outputs.status }}"
+
+
     # Start instance
     - name: Bringing up instance
       run: |-
-        gcloud compute instances start --project $PROJECT_ID --zone $GCE_INSTANCE_ZONE $GCE_INSTANCE
+        echo "Just passing"
+        #gcloud compute instances start --project $PROJECT_ID --zone $GCE_INSTANCE_ZONE $GCE_INSTANCE
