@@ -174,7 +174,15 @@ jobs:
       run: |-
         export result=${{ github.repository }}
         echo $result
+        str1="jslmariano/dockerize_flask_modular_restplus"
+
+        if [ "$str1" == "$result" ]; then
+            echo "Strings are equal"
+        else
+            echo "Strings are not equal"
+        fi
         echo "##[set-output name=auth_path]$(echo $result)"
+
 
     # # SSH to machinge
     # - name: Update machine
