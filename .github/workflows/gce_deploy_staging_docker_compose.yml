@@ -21,7 +21,6 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GCE_PROJECT }}
-  BASTION_IP: ${{ secrets.FIELDMAN_TEST_BASTION_IP }}
   # TODO: update to instance name
   VPC_NETWORK: batcave
   VPC_SUBNET: bc-asia-east1
@@ -53,6 +52,13 @@ jobs:
       run: |-
         echo "current branch:  ${{ steps.extract_branch.outputs.branch }}"
 
+    # Github IP
+    - name: Getting github ip
+      shell: bash
+      id: github_ip
+      run: |-
+        echo "##[set-output name=ip;]$(echo $(dig +short myip.opendns.com @resolver1.opendns.com))"
+
     # Setup gcloud CLI
     - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
       with:
@@ -69,15 +75,84 @@ jobs:
                   --filter="name:($STAGING_NAME)" \
                   --format="value(status)"))"
 
-    # Preview
+    # Preview status
     - name: Preview staging status
       run: |-
         echo "current status:  ${{ steps.staging_vm_status.outputs.status }}"
 
-
     # Start instance
-    - name: Bringing up instance
+    - name: Bringing up staging instance
       run: |-
-        echo "Just passing"
-        #gcloud compute instances start --project $PROJECT_ID --zone $GCE_INSTANCE_ZONE $GCE_INSTANCE
+        export STAGING_STATUS=${{ steps.staging_vm_status.outputs.status }}
+
+        if [ -z "$STAGING_STATUS" ]; then
+          echo "Staging vm does not exist!, now creating..."
+          gcloud compute instances create $STAGING_NAME \
+            --project=$PROJECT_ID \
+            --zone=$ZONE \
+            --machine-type=n1-standard-4 \
+            --network=$VPC_NETWORK \
+            --subnet=$VPC_SUBNET \
+            --tags=$STAGING_ALLOW_TAG \
+            --metadata=block-project-ssh-keys=true \
+            --image=debian-9-stretch-v20200420 \
+            --image-project=debian-cloud \
+            --scopes=https://www.googleapis.com/auth/cloud-platform \
+            --boot-disk-size=10GB \
+            --boot-disk-type=pd-ssd \
+            --boot-disk-device-name=$STAGING_NAME \
+            --reservation-affinity=any
+        fi
+
+        if [[ $STAGING_STATUS != "RUNNING" ]]; then
+            echo "Staging status stopped, now starting...."
+            gcloud compute instances start $STAGING_NAME --project $PROJECT_ID --zone $ZONE
+        fi
+        echo "Done bringing up instance"
+
+    - name: Getting staging vm external ip
+      shell: bash
+      id: staging_vm_ip
+      run: |-
+        echo "##[set-output name=nat_ip;]$(echo $(gcloud compute instances describe $STAGING_NAME \
+                --zone=$ZONE \
+                --format="value(networkInterfaces.accessConfigs[0].natIP)")
+
+    - name: Getting staging firewall status
+      shell: bash
+      id: staging_firewall_status
+      run: |-
+        echo "##[set-output name=disabled;]$(echo $(gcloud compute firewall-rules list \
+                --filter="name:($STAGING_ALLOW_TAG)" \
+                --format="value(disabled)")
+
+    # Patch firewall
+    - name: Patching up staging firewall
+      run: |-
+        export STAGING_FIREWALL_DISABLED=${{ steps.staging_firewall_status.outputs.disabled }}
+        export STAGING_IP=${{ steps.staging_vm_ip.outputs.nat_ip }}
+        export TEMP_IP=${{ steps.github_ip.outputs.ip }}
+
+        if [ -z "$STAGING_FIREWALL_DISABLED" ]; then
+            echo "Staging firewall does not exists!, now creating..."
+            gcloud compute firewall-rules create $STAGING_ALLOW_TAG \
+              --allow=tcp:$STAGING_CUSTOM_SSH_PORT \
+              --description='Allow ssh from github' \
+              --enable-logging \
+              --network=$VPC_NETWORK \
+              --source-ranges=$STAGING_IP \
+              --target-tags=$STAGING_ALLOW_TAG
+        fi
+
+        if [[ $STAGING_FIREWALL_DISABLED == "True" ]]; then
+            echo "Staging firewall is disabled, now enabling...."
+            gcloud compute firewall-rules update $STAGING_ALLOW_TAG \
+              --no-disabled
+        fi
+
+        echo "Patching staging firewall.."
+        gcloud compute firewall-rules update $STAGING_ALLOW_TAG \
+              --source-ranges $STAGING_IP,$TEMP_IP
+        echo "Done patching staging firewall.."
+
 
