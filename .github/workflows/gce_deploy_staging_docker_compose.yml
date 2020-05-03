@@ -44,28 +44,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    # VALIDATION
-    - name: Validate secrets
-      run: |-
-        echo "Validating required secrets"
-        declare -a secret_names=(
-            "GCE_PROJECT"
-            "GCE_SA_EMAIL"
-            "GCE_SA_KEY"
-            "STAGING_CUSTOM_SSH_PORT"
-            "TEST"
-            )
-
-        for name in "${secret_names[@]}"; do
-            secret_name="secrets.${name}"
-            if [[ -z ${{ secrets[PROJECT_ID] }} ]]; then
-                echo "ERROR! Missing or empty secret [ $name ]!"
-                exit 1
-            fi
-        done
-
-
-
     - name: Extract branch name
       shell: bash
       id: extract_branch
@@ -190,4 +168,51 @@ jobs:
               --allow tcp:$STAGING_CUSTOM_SSH_PORT
         echo "Done patching staging firewall.."
 
+    - name: Getting current repository
+      shell: bash
+      id: current_repo
+      run: |-
+        export result=$(github.repository)
+        echo $result
+        echo "##[set-output name=auth_path]$(echo $result)"
 
+    # # SSH to machinge
+    # - name: Update machine
+    #   env:
+    #     s_command: |-
+    #       sudo apt install apt-transport-https ca-certificates curl software-properties-common gnupg2 &&
+    #       sudo curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+    #       sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" &&
+    #       sudo apt-get update -y &&
+    #       sudo apt-get upgrade -y &&
+    #       sudo apt-get install git -y &&
+    #       sudo apt-get install docker-ce -y &&
+    #       sudo usermod -aG docker root &&
+    #       sudo curl -L "https://github.com/docker/compose/releases/download/1.25.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose &&
+    #       sudo chmod +x /usr/local/bin/docker-compose &&
+    #       sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose &&
+    #       sudo docker -v &&
+    #       sudo docker-compose --version
+    #   run: |-
+    #     gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE -- $s_command
+
+
+    # # SSH to machinge
+    # - name: Update local repository
+    #   env:
+    #     s_command: |-
+    #       ls -al &&
+    #       cd /var/www/ &&
+    #       sudo chmod 777 -R /var/www/* &&
+    #       sudo rm -rf /var/www/* &&
+    #       sudo rm -rf .git/index.lock &&
+    #       sudo git reset --hard HEAD &&
+    #       echo ${{ steps.extract_branch.outputs.branch }} &&
+    #       sudo git fetch https://navagisjosel:${{ secrets.GPAT }}@github.com/jslmariano/dockerize_flask_modular_restplus.git &&
+    #       sudo git checkout ${{ steps.extract_branch.outputs.branch }} &&
+    #       sudo git pull https://navagisjosel:${{ secrets.GPAT }}@github.com/jslmariano/dockerize_flask_modular_restplus.git &&
+    #       sudo git reset --hard origin/${{ steps.extract_branch.outputs.branch }} &&
+    #       sudo git branch &&
+    #       sudo git status
+    #   run: |-
+    #     gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE -- $s_command
