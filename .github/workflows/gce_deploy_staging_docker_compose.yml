@@ -58,7 +58,7 @@ jobs:
 
         for name in "${secret_names[@]}"; do
             secret_name="secrets.${name}"
-            if [[ -z ${{ secrets[$name] }} ]]; then
+            if [[ -z ${{ secrets['PROJECT_ID'] }} ]]; then
                 echo "ERROR! Missing or empty secret [ $name ]!"
                 exit 1
             fi
