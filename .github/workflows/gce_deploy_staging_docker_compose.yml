@@ -44,6 +44,29 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
+    # VALIDATION
+    - name: Validate secrets
+      shell: bash
+      id: extract_branch
+      run: |-
+        echo "Validating required secrets"
+        declare -a secret_names=(
+            "GCE_PROJECT"
+            "GCE_SA_EMAIL"
+            "GCE_SA_KEY"
+            "STAGING_CUSTOM_SSH_PORT"
+            "TEST"
+            )
+
+        for name in "${secret_names[@]}"; do
+            if [[ -z ${{ secrets.$name }} ]]; then
+                echo "ERROR! Missing or empty secret [ $name ]!"
+                exit 1
+            fi
+        done
+
+
+
     - name: Extract branch name
       shell: bash
       id: extract_branch
