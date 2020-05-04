@@ -229,7 +229,9 @@ jobs:
           sudo chmod 777 -R /var/www/ &&
           sudo rm -rf /var/www/* &&
           echo ${{ steps.current_repo.outputs.auth_url }} &&
+          echo "Cloning repository" &&
           sudo git clone ${{ steps.current_repo.outputs.auth_url }}
+          echo "Done Cloning repository" &&
           sudo rm -rf .git/index.lock &&
           sudo git reset --hard HEAD &&
           echo ${{ steps.extract_branch.outputs.branch }} &&
