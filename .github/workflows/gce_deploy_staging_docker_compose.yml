@@ -35,7 +35,7 @@ env:
 
 jobs:
   ssh-git-clone-docker-compose:
-    name: Create, Staging, SSH, and Deploy
+    name: SSH, Git Clone, and Docker Compose
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
