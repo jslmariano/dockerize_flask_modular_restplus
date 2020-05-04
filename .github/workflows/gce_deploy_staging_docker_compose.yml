@@ -128,7 +128,7 @@ jobs:
         echo "Updating staging metadata [startup-script] for patching ssh custom port..."
         gcloud compute instances add-metadata $STAGING_NAME \
             --project $PROJECT_ID --zone $ZONE \
-            --metadata startup-script=${{ steps.ssh_custom_port.outputs.patch_command }}
+            --metadata startup-script="${{ steps.ssh_custom_port.outputs.patch_command }}"
 
         echo "Rebooting staging instance.."
         gcloud compute instances stop $STAGING_NAME --project $PROJECT_ID --zone $ZONE
