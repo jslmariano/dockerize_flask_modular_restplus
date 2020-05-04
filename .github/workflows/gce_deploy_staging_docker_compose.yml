@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: GCE SSH GIT CLONE PULL
+name: GCE SSH GIT CLONE DOCKER COMPOSE
 
 on:
   push:
@@ -34,7 +34,7 @@ env:
   STAGING_CUSTOM_SSH_PORT: ${{ secrets.STAGING_CUSTOM_SSH_PORT }}
 
 jobs:
-  ssh-git-clone-pull:
+  ssh-git-clone-docker-compose:
     name: Create, Staging, SSH, and Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -95,15 +95,17 @@ jobs:
     # Start instance
     - name: Prepare staging instance
       id: prepare_staging
+      env:
+        STAGING_STATUS: ${{ steps.staging_vm_status.outputs.status }}
+        STAGING_MACHINE_TYPE: n1-standard-4 # Change prior to specs
       run: |-
-        export STAGING_STATUS=${{ steps.staging_vm_status.outputs.status }}
 
         if [ -z "$STAGING_STATUS" ]; then
           echo "Staging vm does not exist!, now creating..."
           gcloud compute instances create $STAGING_NAME \
             --project=$PROJECT_ID \
             --zone=$ZONE \
-            --machine-type=n1-standard-4 \
+            --machine-type=$STAGING_MACHINE_TYPE \
             --network=$VPC_NETWORK \
             --subnet=$VPC_SUBNET \
             --tags=allow-ssh-bastion,$STAGING_ALLOW_TAG \
