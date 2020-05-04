@@ -37,7 +37,7 @@ jobs:
   create-staging-ssh-deploy:
     name: Create, Staging, SSH, and Deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
 
     steps:
 
@@ -197,7 +197,8 @@ jobs:
         export result="https://${{ github.repository_owner }}:${{ secrets.GPAT }}@github.com/${{ github.repository }}.git"
         echo "##[set-output name=auth_url]$(echo $result)"
 
-    # SSH to machinge
+    # Update machine
+    # NOTE: This is an overhead, we might need to work around this
     - name: Update machine
       env:
         s_command: |-
@@ -218,7 +219,7 @@ jobs:
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
 
 
-    # SSH to machinge
+    # Clone or pull repositor on machine
     - name: Update local repository
       env:
         s_command: |-
