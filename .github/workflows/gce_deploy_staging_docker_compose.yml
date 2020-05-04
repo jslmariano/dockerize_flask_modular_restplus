@@ -224,8 +224,8 @@ jobs:
       env:
         s_command: |-
           ls -al &&
-          cd /var/www/ &&
           sudo mkdir -p /var/www &&
+          cd /var/www/ &&
           sudo chmod 777 -R /var/www/* &&
           sudo rm -rf /var/www/* &&
           sudo git clone ${{ steps.current_repo.outputs.auth_url }}
