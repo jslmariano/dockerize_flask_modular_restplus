@@ -84,8 +84,17 @@ jobs:
       run: |-
         echo "current status:  ${{ steps.staging_vm_status.outputs.status }}"
 
+    # SSH port patcher
+    - name: Build patch for custom ssh port
+      shell: bash
+      id: ssh_custom_port
+      run: |-
+        export result="sed -re 's/^(\#?)(Port)([[:space:]]+)([[:digit:]]+)/\2\3$STAGING_CUSTOM_SSH_PORT/' -i.`date -I` /etc/ssh/sshd_config"
+        echo "##[set-output name=patch_command;]$(echo $(result))"
+
     # Start instance
-    - name: Bringing up staging instance
+    - name: Prepare staging instance
+      id: prepare_staging
       run: |-
         export STAGING_STATUS=${{ steps.staging_vm_status.outputs.status }}
 
@@ -97,7 +106,7 @@ jobs:
             --machine-type=n1-standard-4 \
             --network=$VPC_NETWORK \
             --subnet=$VPC_SUBNET \
-            --tags=$STAGING_ALLOW_TAG \
+            --tags=allow-ssh-bastion,$STAGING_ALLOW_TAG \
             --metadata=block-project-ssh-keys=true \
             --image=debian-9-stretch-v20200420 \
             --image-project=debian-cloud \
@@ -105,14 +114,27 @@ jobs:
             --boot-disk-size=10GB \
             --boot-disk-type=pd-ssd \
             --boot-disk-device-name=$STAGING_NAME \
-            --reservation-affinity=any
+            --reservation-affinity=any \
+            --metadata= \
+                block-project-ssh-keys=true
         fi
 
-        if [[ $STAGING_STATUS != "RUNNING" ]]; then
-            echo "Staging status stopped, now starting...."
-            gcloud compute instances start $STAGING_NAME --project $PROJECT_ID --zone $ZONE
-        fi
-        echo "Done bringing up instance"
+        echo "Saving old metadata [startup-script] ..."
+        export old_startup_script=$(gcloud compute instances describe staging-docker \
+            --project $PROJECT_ID --zone $ZONE \
+            --format='value[](metadata.items.startup-script)')
+        echo "##[set-output name=old_startup_script;]$(echo $(old_startup_script))"
+
+        echo "Updating staging metadata [startup-script] for patching ssh custom port..."
+        gcloud compute instances add-metadata $STAGING_NAME \
+            --project $PROJECT_ID --zone $ZONE \
+            --metadata startup-script=${{ steps.ssh_custom_port.outputs.patch_command }}
+
+        echo "Rebooting staging instance.."
+        gcloud compute instances stop $STAGING_NAME --project $PROJECT_ID --zone $ZONE
+        gcloud compute instances start $STAGING_NAME --project $PROJECT_ID --zone $ZONE
+
+        echo "Done preparing staging instance"
 
     - name: Getting staging vm external ip
       shell: bash
@@ -174,7 +196,6 @@ jobs:
       run: |-
         export result="https://${{ github.repository_owner }}:${{ secrets.GPAT }}@github.com/${{ github.repository }}.git"
         echo "##[set-output name=auth_url]$(echo $result)"
-
 
     # SSH to machinge
     - name: Update machine
