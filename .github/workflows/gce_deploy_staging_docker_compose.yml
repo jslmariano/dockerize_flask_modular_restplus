@@ -90,7 +90,7 @@ jobs:
       id: ssh_custom_port
       run: |-
         export result="sed -re 's/^(\#?)(Port)([[:space:]]+)([[:digit:]]+)/\2\3$STAGING_CUSTOM_SSH_PORT/' -i.`date -I` /etc/ssh/sshd_config"
-        echo "##[set-output name=patch_command;]$(echo $(result))"
+        echo "##[set-output name=patch_command;]$(echo $result)"
 
     # Start instance
     - name: Prepare staging instance
@@ -123,7 +123,7 @@ jobs:
         export old_startup_script=$(gcloud compute instances describe staging-docker \
             --project $PROJECT_ID --zone $ZONE \
             --format='value[](metadata.items.startup-script)')
-        echo "##[set-output name=old_startup_script;]$(echo $(old_startup_script))"
+        echo "##[set-output name=old_startup_script;]$(echo $old_startup_script)"
 
         echo "Updating staging metadata [startup-script] for patching ssh custom port..."
         gcloud compute instances add-metadata $STAGING_NAME \
