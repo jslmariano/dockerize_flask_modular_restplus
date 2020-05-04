@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: GCE create staging vm and deploy app with docker compose
+name: GCE SSH GIT CLONE PULL
 
 on:
   push:
@@ -34,7 +34,7 @@ env:
   STAGING_CUSTOM_SSH_PORT: ${{ secrets.STAGING_CUSTOM_SSH_PORT }}
 
 jobs:
-  create-staging-ssh-deploy:
+  ssh-git-clone-pull:
     name: Create, Staging, SSH, and Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -228,6 +228,7 @@ jobs:
           cd /var/www/ &&
           sudo chmod 777 -R /var/www/ &&
           sudo rm -rf /var/www/* &&
+          echo ${{ steps.current_repo.outputs.auth_url }} &&
           sudo git clone ${{ steps.current_repo.outputs.auth_url }}
           sudo rm -rf .git/index.lock &&
           sudo git reset --hard HEAD &&
