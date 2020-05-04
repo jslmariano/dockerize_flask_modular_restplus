@@ -198,7 +198,7 @@ jobs:
         echo "##[set-output name=auth_url]$(echo $result)"
 
     # Update machine
-    # NOTE: This is an overhead, we might need to work around this
+    # NOTE: This is an overhead on 1st run, we might need to work around this
     - name: Update machine
       env:
         s_command: |-
@@ -225,6 +225,7 @@ jobs:
         s_command: |-
           ls -al &&
           cd /var/www/ &&
+          sudo mkdir -p /var/www &&
           sudo chmod 777 -R /var/www/* &&
           sudo rm -rf /var/www/* &&
           sudo git clone ${{ steps.current_repo.outputs.auth_url }}
