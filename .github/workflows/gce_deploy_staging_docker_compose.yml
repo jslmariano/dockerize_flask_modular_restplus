@@ -230,8 +230,10 @@ jobs:
           sudo rm -rf /var/www/* &&
           echo ${{ steps.current_repo.outputs.auth_url }} &&
           echo "Cloning repository" &&
-          sudo git clone ${{ steps.current_repo.outputs.auth_url }}
+          sudo git clone ${{ steps.current_repo.outputs.auth_url }} app &&
           echo "Done Cloning repository" &&
+          cd app/ &&
+          ls -al &&
           sudo rm -rf .git/index.lock &&
           sudo git reset --hard HEAD &&
           echo ${{ steps.extract_branch.outputs.branch }} &&
