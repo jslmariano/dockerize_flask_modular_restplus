@@ -247,3 +247,19 @@ jobs:
           sudo git status
       run: |-
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+
+
+    # Docker compose
+    - name: Build docker stacks
+      env:
+        s_command: |-
+          ls -al &&
+          sudo chmod 777 -R /var/www/ &&
+          cd /var/www/app &&
+          echo "Building docker stacks..." &&
+          sudo docker-compose build &&
+          sudo docker-compose up -d &&
+          echo "Done Building docker stacks..." &&
+          sudo docker ps -a
+      run: |-
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
