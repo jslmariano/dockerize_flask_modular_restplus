@@ -229,9 +229,9 @@ jobs:
         s_command: |-
           ls -al &&
           sudo mkdir -p '$APP_DIR_PARENT' &&
-          cd /var/www/ &&
-          sudo chmod 777 -R /var/www/ &&
-          sudo rm -rf /var/www/* &&
+          cd '$APP_DIR_PARENT/' &&
+          sudo chmod 777 -R '$APP_DIR_PARENT/' &&
+          sudo rm -rf '$APP_DIR_PARENT/*' &&
           echo ${{ steps.current_repo.outputs.auth_url }} &&
           echo "Cloning repository" &&
           sudo git clone ${{ steps.current_repo.outputs.auth_url }} app &&
@@ -256,8 +256,8 @@ jobs:
       env:
         s_command: |-
           ls -al &&
-          sudo chmod 777 -R /var/www/ &&
-          cd /var/www/app &&
+          sudo chmod 777 -R '$APP_DIR_PARENT/' &&
+          cd '$APP_DIR_PARENT/app' &&
           echo "Building docker stacks..." &&
           sudo docker-compose build &&
           sudo docker-compose up -d &&
