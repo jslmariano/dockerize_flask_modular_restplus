@@ -22,6 +22,8 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCE_PROJECT }}
   # TODO: update to instance name
+  APP_DIR_PARENT: /var/www
+  APP_DIRT: app
   VPC_NETWORK: batcave
   VPC_SUBNET: bc-asia-east1
   REGION: asia-east1
@@ -226,7 +228,7 @@ jobs:
       env:
         s_command: |-
           ls -al &&
-          sudo mkdir -p /var/www &&
+          sudo mkdir -p "$APP_DIR_PARENT" &&
           cd /var/www/ &&
           sudo chmod 777 -R /var/www/ &&
           sudo rm -rf /var/www/* &&
