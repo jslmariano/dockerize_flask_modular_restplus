@@ -228,7 +228,7 @@ jobs:
       env:
         s_command: |-
           ls -al &&
-          echo '$APP_DIR_PARENT' &&
+          echo '$APP_DIR_PARENT' && 
           sudo mkdir -p '$APP_DIR_PARENT' &&
           cd /var/www/ &&
           sudo chmod 777 -R /var/www/ &&
