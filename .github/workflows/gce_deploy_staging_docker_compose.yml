@@ -23,7 +23,7 @@ env:
   PROJECT_ID: ${{ secrets.GCE_PROJECT }}
   # TODO: update to instance name
   APP_DIR_PARENT: /var/www
-  APP_DIRT: app
+  APP_DIR: app
   VPC_NETWORK: batcave
   VPC_SUBNET: bc-asia-east1
   REGION: asia-east1
@@ -230,13 +230,13 @@ jobs:
           ls -al &&
           sudo mkdir -p '$APP_DIR_PARENT' &&
           cd '$APP_DIR_PARENT/' &&
-          sudo chmod 777 -R '$APP_DIR_PARENT/' &&
+          sudo chmod 777 -R "$APP_DIR_PARENT/" &&
           sudo rm -rf '$APP_DIR_PARENT/*' &&
           echo ${{ steps.current_repo.outputs.auth_url }} &&
           echo "Cloning repository" &&
-          sudo git clone ${{ steps.current_repo.outputs.auth_url }} app &&
+          sudo git clone ${{ steps.current_repo.outputs.auth_url }} '$APP_DIR' &&
           echo "Done Cloning repository" &&
-          cd app/ &&
+          cd '$APP_DIR/' &&
           ls -al &&
           sudo rm -rf .git/index.lock &&
           sudo git reset --hard HEAD &&
@@ -257,7 +257,7 @@ jobs:
         s_command: |-
           ls -al &&
           sudo chmod 777 -R '$APP_DIR_PARENT/' &&
-          cd '$APP_DIR_PARENT/app' &&
+          cd '$APP_DIR_PARENT/$APP_DIR' &&
           echo "Building docker stacks..." &&
           sudo docker-compose build &&
           sudo docker-compose up -d &&
