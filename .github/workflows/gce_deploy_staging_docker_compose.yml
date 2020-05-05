@@ -265,3 +265,17 @@ jobs:
           sudo docker ps -a
       run: |-
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+
+    # Custom Post Process
+    - name: Cleaning up
+      if: always()
+      run: |-
+        ecgho "Closing down firewall for github"
+        gcloud compute firewall-rules update $STAGING_ALLOW_TAG --source-ranges ${{ steps.staging_vm_ip.outputs.nat_ip }}
+        gcloud compute firewall-rules update $STAGING_ALLOW_TAG --disabled
+        echo "Updating staging metadata [startup-script] from it's old value..."
+        gcloud compute instances add-metadata $STAGING_NAME \
+            --project $PROJECT_ID --zone $ZONE \
+            --metadata startup-script="${{ steps.prepare_staging.outputs.old_startup_script }}"
+        echo "Custom clean up done"
+
