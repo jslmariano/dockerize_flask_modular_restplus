@@ -270,7 +270,7 @@ jobs:
     - name: Cleaning up
       if: always()
       run: |-
-        ecgho "Closing down firewall for github"
+        echo "Closing down firewall for github"
         gcloud compute firewall-rules update $STAGING_ALLOW_TAG --source-ranges ${{ steps.staging_vm_ip.outputs.nat_ip }}
         gcloud compute firewall-rules update $STAGING_ALLOW_TAG --disabled
         echo "Updating staging metadata [startup-script] from it's old value..."
