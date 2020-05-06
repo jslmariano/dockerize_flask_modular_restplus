@@ -207,7 +207,8 @@ jobs:
       env:
         s_command: |-
           ls -al &&
-          sudo chmod 777 -R '$APP_DIR_PARENT/' &&
+          sudo chmod 777 -R "$APP_DIR_PARENT/" &&
+          sudo chmod 777 -R $APP_DIR_PARENT/ &&
           cd '/var/www/app' &&
           ls -al &&
           echo "Building docker stacks..." &&
@@ -224,7 +225,7 @@ jobs:
         sudo rm -rf $APP_DIR_PARENT &&
         echo ${{ steps.current_repo.outputs.auth_url }} &&
         echo 'Cloning repository' &&
-        sudo git clone -b ${{ steps.extract_branch.outputs.branch }} \
+        sudo git clone -b ${{ steps.extract_branch.outputs.branch }} 
         --single-branch ${{ steps.current_repo.outputs.auth_url }} $APP_DIR_PARENT/$APP_DIR &&
         echo 'Done Cloning repository'
         "
@@ -268,7 +269,7 @@ jobs:
         # Work around is to use the traditional '--' SSH_ARGS
         gcloud compute ssh $STAGING_NAME \
         --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command='$s_command'
 
     # Clone or pull repositor on machine
     - name: Update local repository
@@ -276,7 +277,7 @@ jobs:
         gcloud compute ssh $STAGING_NAME \
         --project $PROJECT_ID --zone $ZONE \
         --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
-        --command=${{ steps.generate_commands.outputs.git_clone }}
+        --command='${{ steps.generate_commands.outputs.git_clone }}'
 
 
     # Docker compose
