@@ -230,7 +230,7 @@ jobs:
           ls -al &&
           sudo mkdir -p '$APP_DIR_PARENT' &&
           cd '$APP_DIR_PARENT/' &&
-          sudo chmod 777 -R "$APP_DIR_PARENT/" &&
+          sudo chmod 777 -R '$APP_DIR_PARENT/' &&
           sudo rm -rf '$APP_DIR_PARENT/*' &&
           echo ${{ steps.current_repo.outputs.auth_url }} &&
           echo "Cloning repository" &&
