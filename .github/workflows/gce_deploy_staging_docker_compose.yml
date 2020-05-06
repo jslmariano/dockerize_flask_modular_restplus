@@ -244,6 +244,12 @@ jobs:
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- "cd $APP_DIR_PARENT && echo $(pwd)"
 
     # VARIABLE double quote
+    - name: TEST direct w/o quotes
+      if: always()
+      run: |-
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- cd $APP_DIR_PARENT && echo $(pwd)
+
+    # VARIABLE double quote
     - name: TEST from dynamic export
       if: always()
       run: |-
