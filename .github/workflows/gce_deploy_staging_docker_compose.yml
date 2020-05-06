@@ -199,6 +199,113 @@ jobs:
         export result="https://${{ github.repository_owner }}:${{ secrets.GPAT }}@github.com/${{ github.repository }}.git"
         echo "##[set-output name=auth_url]$(echo $result)"
 
+    # DIR test
+    - name: Directory vairable tests
+      if: always()
+      env:
+        s_command: |-
+          echo "DIR TEST" &&
+          echo "echo dir variable" &&
+          echo $APP_DIR_PARENT &&
+          echo "echo dir variable with single quote" &&
+          echo '$APP_DIR_PARENT' &&
+          echo "echo dir variable with double quote" &&
+          echo "$APP_DIR_PARENT" &&
+          echo "Done DIR TEST"
+      run: |-
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+
+    # VARIABLE
+    - name: TEST change directory with variable only
+      if: always()
+      env:
+        s_command: |-
+          echo "Testing ...." &&
+          cd $APP_DIR_PARENT &&
+          echo "Curren directory is $(pwd)" &&
+          echo "Curren directory lists" &&
+          ls -al &&
+          echo "Done Testing ...."
+      run: |-
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+
+    # VARIABLE single quote
+    - name: TEST change directory with variable single quote
+      if: always()
+      env:
+        s_command: |-
+          echo "Testing ...." &&
+          cd '$APP_DIR_PARENT' &&
+          echo "Curren directory is $(pwd)" &&
+          echo "Curren directory lists" &&
+          ls -al &&
+          echo "Done Testing ...."
+      run: |-
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+
+    # VARIABLE double quote
+    - name: TEST change directory with variable double quote
+      if: always()
+      env:
+        s_command: |-
+          echo "Testing ...." &&
+          cd "$APP_DIR_PARENT" &&
+          echo "Curren directory is $(pwd)" &&
+          echo "Curren directory lists" &&
+          ls -al &&
+          echo "Done Testing ...."
+      run: |-
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+
+    # VARIABLE double quote
+    - name: TEST change directory with eval variable interpolation
+      if: always()
+      env:
+        s_command: |-
+          echo "Testing ...." &&
+          eval cd "${APP_DIR_PARENT}" &&
+          echo "Curren directory is $(pwd)" &&
+          echo "Curren directory lists" &&
+          ls -al &&
+          echo "Done Testing ...."
+      run: |-
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+
+    # VARIABLE double quote
+    - name: TEST change directory with variable echo substition
+      if: always()
+      env:
+        s_command: |-
+          echo "Testing ...." &&
+          cd "$(echo $APP_DIR_PARENT)" &&
+          echo "Curren directory is $(pwd)" &&
+          echo "Curren directory lists" &&
+          ls -al &&
+          echo "Done Testing ...."
+      run: |-
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+    gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+
+    # VARIABLE double quote
+    - name: TEST change directory with variable echo substition and pipe
+      if: always()
+      env:
+        s_command: |-
+          echo "Testing ...." &&
+          cd $(echo $APP_DIR_PARENT | tr -d '\r') &&
+          echo "Curren directory is $(pwd)" &&
+          echo "Curren directory lists" &&
+          ls -al &&
+          echo "Done Testing ...."
+      run: |-
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+
+    # Calibrating directory
+    - name: End testing
+      if: always()
+      run: |-
+        exit 1
+
     # Update machine
     # NOTE: This is an overhead on 1st run, we might need to work around this
     - name: Update machine
@@ -219,7 +326,6 @@ jobs:
           sudo docker-compose --version
       run: |-
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
-
 
     # Clone or pull repositor on machine
     - name: Update local repository
@@ -246,7 +352,8 @@ jobs:
           sudo docker-compose build &&
           sudo docker-compose up -d &&
           echo "Done Building docker stacks..." &&
-          sudo docker ps -a
+          sudo docker ps -a &&
+          sudo docker-compose down
       run: |-
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
 
