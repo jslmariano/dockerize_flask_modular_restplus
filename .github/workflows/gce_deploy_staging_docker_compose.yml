@@ -221,12 +221,18 @@ jobs:
         echo "Test s_command from local env"
         echo $s_command
         export git_clone="
-        cd $APP_DIR_PARENT &&
         sudo rm -rf $APP_DIR_PARENT &&
+        echo $(pwd) &&
+        sl -al &&
+        sudo mkdir -p $APP_DIR_PARENT &&
+        sudo chmod 777 -R $APP_DIR_PARENT &&
+        cd $APP_DIR_PARENT &&
         echo ${{ steps.current_repo.outputs.auth_url }} &&
         echo \"Cloning repository\" &&
-        sudo git clone -b ${{ steps.extract_branch.outputs.branch }} 
-        --single-branch ${{ steps.current_repo.outputs.auth_url }} $APP_DIR_PARENT/$APP_DIR &&
+        sudo git clone -b ${{ steps.extract_branch.outputs.branch }}
+        --single-branch ${{ steps.current_repo.outputs.auth_url }} $APP_DIR &&
+        cd $APP_DIR &&
+        ls -al &&
         echo \"Done Cloning repository\"
         "
         export docker_compose_commands="
