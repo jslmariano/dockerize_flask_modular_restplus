@@ -119,8 +119,7 @@ jobs:
             --boot-disk-type=pd-ssd \
             --boot-disk-device-name=$STAGING_NAME \
             --reservation-affinity=any \
-            --metadata= \
-                block-project-ssh-keys=true
+            --metadata=block-project-ssh-keys=true
         fi
 
         echo "Saving old metadata [startup-script] ..."
