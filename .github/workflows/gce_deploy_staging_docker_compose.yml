@@ -224,10 +224,10 @@ jobs:
         cd $APP_DIR_PARENT &&
         sudo rm -rf $APP_DIR_PARENT &&
         echo ${{ steps.current_repo.outputs.auth_url }} &&
-        echo 'Cloning repository' &&
+        echo \"Cloning repository\" &&
         sudo git clone -b ${{ steps.extract_branch.outputs.branch }} 
         --single-branch ${{ steps.current_repo.outputs.auth_url }} $APP_DIR_PARENT/$APP_DIR &&
-        echo 'Done Cloning repository'
+        echo \"Done Cloning repository\"
         "
         export docker_compose_commands="
           ls -al &&
@@ -269,7 +269,7 @@ jobs:
         # Work around is to use the traditional '--' SSH_ARGS
         gcloud compute ssh $STAGING_NAME \
         --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command='$s_command'
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
 
     # Clone or pull repositor on machine
     - name: Update local repository
