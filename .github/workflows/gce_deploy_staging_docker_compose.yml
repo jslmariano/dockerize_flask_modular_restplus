@@ -223,7 +223,7 @@ jobs:
         export git_clone="
         sudo rm -rf $APP_DIR_PARENT &&
         echo $(pwd) &&
-        sl -al &&
+        ls -al &&
         sudo mkdir -p $APP_DIR_PARENT &&
         sudo chmod 777 -R $APP_DIR_PARENT &&
         cd $APP_DIR_PARENT &&
