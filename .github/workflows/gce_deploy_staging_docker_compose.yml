@@ -254,6 +254,31 @@ jobs:
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- "cd $APP_DIR_PARENT && echo $(pwd)"
 
     # VARIABLE double quote
+    - name: TEST using --command from generated w/ direct quote
+      if: always()
+      run: |-
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command=${{ steps.generate_commands.outputs.cd_dir }} && echo $(pwd)
+    # VARIABLE double quote
+    - name: TEST using --command from generated w/ single quote
+      if: always()
+      run: |-
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command='${{ steps.generate_commands.outputs.cd_dir }} && echo $(pwd)'
+    # VARIABLE double quote
+    - name: TEST using --command from generated w/ double quote
+      if: always()
+      run: |-
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command="${{ steps.generate_commands.outputs.cd_dir }} && echo $(pwd)"
+
+    # VARIABLE double quote
     - name: TEST using --command
       if: always()
       run: |-
