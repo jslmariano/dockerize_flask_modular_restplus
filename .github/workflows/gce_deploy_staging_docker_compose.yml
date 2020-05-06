@@ -213,6 +213,14 @@ jobs:
           echo "$APP_DIR_PARENT" &&
           echo "Done DIR TEST"
       run: |-
+        echo "DIR TEST"
+        echo "echo dir variable"
+        echo $APP_DIR_PARENT
+        echo "echo dir variable with single quote"
+        echo '$APP_DIR_PARENT'
+        echo "echo dir variable with double quote"
+        echo "$APP_DIR_PARENT"
+        echo "Done DIR TEST"
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
 
     # VARIABLE double quote
