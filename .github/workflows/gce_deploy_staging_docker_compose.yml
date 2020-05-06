@@ -234,7 +234,7 @@ jobs:
         cd $APP_DIR &&
         ls -al &&
         echo \"Done Cloning repository\"
-        "
+        " 
         export docker_compose_commands="
           ls -al &&
           cd $APP_DIR_PARENT/$APP_DIR &&
