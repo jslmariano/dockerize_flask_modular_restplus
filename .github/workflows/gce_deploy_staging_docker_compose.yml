@@ -203,7 +203,8 @@ jobs:
       shell: bash
       id: generate_commands
       run: |-
-        export cd_dir="cd $APP_DIR_PARENT"
+        export cd_dir="cd $APP_DIR_PARENT &&
+        ls -al"
         echo "##[set-output name=cd_dir;]$(echo $cd_dir)"
 
     # DIR test
