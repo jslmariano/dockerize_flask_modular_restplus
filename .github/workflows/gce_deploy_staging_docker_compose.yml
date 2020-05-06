@@ -240,7 +240,7 @@ jobs:
         s_command: |-
           ls -al &&
           sudo chmod 777 -R '$APP_DIR_PARENT/' &&
-          eval cd '$APP_DIR_PARENT' &&
+          cd '/var/www/app' &&
           ls -al &&
           echo "Building docker stacks..." &&
           sudo docker-compose build &&
