@@ -199,6 +199,13 @@ jobs:
         export result="https://${{ github.repository_owner }}:${{ secrets.GPAT }}@github.com/${{ github.repository }}.git"
         echo "##[set-output name=auth_url]$(echo $result)"
 
+    - name: Generating commands
+      shell: bash
+      id: generate_commands
+      run: |-
+        export cd_dir="cd $APP_DIR_PARENT"
+        echo "##[set-output name=cd_dir;]$(echo $cd_dir)"
+
     # DIR test
     - name: Directory vairable tests
       if: always()
@@ -220,6 +227,11 @@ jobs:
         ls -al
         cd $(echo "$APP_DIR_PARENT")
         ls -al
+        echo "testing generated commands"
+        echo "Command : ${{ steps.generate_commands.outputs.cd_dir }}"
+        eval ${{ steps.generate_commands.outputs.cd_dir }}
+        ls -al
+
 
     # VARIABLE double quote
     - name: TEST normal
@@ -312,7 +324,9 @@ jobs:
           ls -al &&
           echo "Done Testing ...."
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
 
     # VARIABLE single quote
     - name: TEST change directory with variable single quote
@@ -326,7 +340,9 @@ jobs:
           ls -al &&
           echo "Done Testing ...."
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
 
     # VARIABLE double quote
     - name: TEST change directory with variable double quote
@@ -340,7 +356,9 @@ jobs:
           ls -al &&
           echo "Done Testing ...."
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
 
     # VARIABLE double quote
     - name: TEST change directory with eval variable interpolation
@@ -354,7 +372,9 @@ jobs:
           ls -al &&
           echo "Done Testing ...."
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
 
     # VARIABLE double quote
     - name: TEST change directory with variable echo substition
@@ -368,7 +388,9 @@ jobs:
           ls -al &&
           echo "Done Testing ...."
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
 
     # VARIABLE double quote
     - name: TEST change directory with variable echo substition and pipe
@@ -382,7 +404,9 @@ jobs:
           ls -al &&
           echo "Done Testing ...."
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
 
     # VARIABLE double quote
     - name: TEST cd ${APP_DIR_PARENT}
@@ -396,7 +420,9 @@ jobs:
           ls -al &&
           echo "Done Testing ...."
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
 
     # Calibrating directory
     - name: End testing
@@ -423,7 +449,9 @@ jobs:
           sudo docker -v &&
           sudo docker-compose --version
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
 
     # Clone or pull repositor on machine
     - name: Update local repository
@@ -435,7 +463,9 @@ jobs:
           sudo git clone -b ${{ steps.extract_branch.outputs.branch }} --single-branch ${{ steps.current_repo.outputs.auth_url }} /var/www/app &&
           echo "Done Cloning repository"
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
 
 
     # Docker compose
@@ -453,14 +483,22 @@ jobs:
           sudo docker ps -a &&
           sudo docker-compose down
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
 
     # Custom Post Process
     - name: Cleaning up
       if: always()
       run: |-
+        echo "Cleanign up os login keys"
+        for i in $(gcloud compute os-login ssh-keys list | grep -v FINGERPRINT)
+        do
+            echo $i; gcloud compute os-login ssh-keys remove --key $i;
+        done
         echo "Closing down firewall for github"
-        gcloud compute firewall-rules update $STAGING_ALLOW_TAG --source-ranges ${{ steps.staging_vm_ip.outputs.nat_ip }}
+        gcloud compute firewall-rules update $STAGING_ALLOW_TAG \
+        --source-ranges ${{ steps.staging_vm_ip.outputs.nat_ip }}
         gcloud compute firewall-rules update $STAGING_ALLOW_TAG --disabled
         echo "Updating staging metadata [startup-script] from it's old value..."
         gcloud compute instances add-metadata $STAGING_NAME \
