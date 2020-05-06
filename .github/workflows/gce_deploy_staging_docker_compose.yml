@@ -263,9 +263,12 @@ jobs:
           sudo docker -v &&
           sudo docker-compose --version
       run: |-
+        # NOTE here don't use --command if you are using local env variable,
+        # It will convert every hitespace to newlines!
+        # Work around is to use the traditional '--' SSH_ARGS
         gcloud compute ssh $STAGING_NAME \
         --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
 
     # Clone or pull repositor on machine
     - name: Update local repository
