@@ -199,262 +199,50 @@ jobs:
         export result="https://${{ github.repository_owner }}:${{ secrets.GPAT }}@github.com/${{ github.repository }}.git"
         echo "##[set-output name=auth_url]$(echo $result)"
 
+    # Convert commands into actual string so it can be pass to ssh cleanly
+    # Apparently this is needed if command involves directory utilizations
     - name: Generating commands
       shell: bash
       id: generate_commands
-      run: |-
-        export cd_dir="cd $APP_DIR_PARENT &&
-        ls -al"
-        echo "##[set-output name=cd_dir;]$(echo $cd_dir)"
-
-    # DIR test
-    - name: Directory vairable tests
-      if: always()
-      run: |-
-        echo "DIR TEST"
-        echo "echo dir variable"
-        echo $APP_DIR_PARENT
-        echo "echo dir variable with single quote"
-        echo '$APP_DIR_PARENT'
-        echo "echo dir variable with single quote interpolated"
-        echo '${APP_DIR_PARENT}'
-        echo "echo dir variable with double quote"
-        echo "$APP_DIR_PARENT"
-        echo "Done DIR TEST"
-        sudo mkdir -p /var/www/test/test
-        cd $APP_DIR_PARENT
-        ls -al
-        cd ..
-        ls -al
-        cd $(echo "$APP_DIR_PARENT")
-        ls -al
-        echo "testing generated commands"
-        echo "Command : ${{ steps.generate_commands.outputs.cd_dir }}"
-        eval ${{ steps.generate_commands.outputs.cd_dir }}
-        ls -al
-
-
-    # VARIABLE double quote
-    - name: TEST normal
-      if: always()
       env:
         s_command: |-
-          echo "Testing ...." &&
-          cd /var/www &&
-          echo "Curren directory is $(pwd)" &&
-          echo "Curren directory lists" &&
           ls -al &&
-          echo "Done Testing ...."
+          sudo chmod 777 -R '$APP_DIR_PARENT/' &&
+          cd '/var/www/app' &&
+          ls -al &&
+          echo "Building docker stacks..." &&
+          sudo docker-compose build &&
+          sudo docker-compose up -d &&
+          echo "Done Building docker stacks..." &&
+          sudo docker ps -a &&
+          sudo docker-compose down
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
-
-    # VARIABLE double quote
-    - name: TEST direct
-      if: always()
-      run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- "cd $APP_DIR_PARENT && echo $(pwd)"
-
-    # VARIABLE double quote
-    - name: TEST using --command from generated w/ direct quote
-      if: always()
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
-        --command=${{ steps.generate_commands.outputs.cd_dir }} && echo $(pwd)
-    # VARIABLE double quote
-    - name: TEST using --command from generated w/ single quote
-      if: always()
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
-        --command='${{ steps.generate_commands.outputs.cd_dir }} && echo $(pwd)'
-    # VARIABLE double quote
-    - name: TEST using --command from generated w/ double quote
-      if: always()
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
-        --command="${{ steps.generate_commands.outputs.cd_dir }} && echo $(pwd)"
-
-    # VARIABLE double quote
-    - name: TEST using --command
-      if: always()
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
-        --command="cd $APP_DIR_PARENT && echo $(pwd)"
-
-    # VARIABLE double quote
-    - name: TEST using --command w/o quotes
-      if: always()
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
-        --command=cd $APP_DIR_PARENT && echo $(pwd)
-
-    # VARIABLE double quote
-    - name: TEST using --command quotes, v2
-      if: always()
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
-        --command='cd $(echo $APP_DIR_PARENT) && echo $(pwd)'
-
-    # VARIABLE double quote
-    - name: TEST from dynamic export
-      if: always()
-      run: |-
-        export x_command='echo "Testing"... &&
-        cd /var/www &&
-        echo "Curren directory is $(pwd)" &&
-        echo "Curren directory lists" &&
-        ls -al &&
-        echo "Done testing"
-        '
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
-        --command=$x_command
-
-    # VARIABLE double quote
-    - name: TEST from dynamic w/ variable
-      if: always()
-      run: |-
-        export x_command='echo "Testing"... &&
+        echo "Test s_command from local env"
+        echo $s_command
+        export git_clone="
         cd $APP_DIR_PARENT &&
-        echo "Curren directory is $(pwd)" &&
-        echo "Curren directory lists" &&
-        ls -al &&
-        echo "Done testing"
-        '
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
-        --command=$x_command
-
-    # VARIABLE
-    - name: TEST change directory with variable only
-      if: always()
-      env:
-        s_command: |-
-          echo "Testing ...." &&
-          cd $APP_DIR_PARENT &&
-          echo "Curren directory is $(pwd)" &&
-          echo "Curren directory lists" &&
+        sudo rm -rf $APP_DIR_PARENT &&
+        echo ${{ steps.current_repo.outputs.auth_url }} &&
+        echo 'Cloning repository' &&
+        sudo git clone -b ${{ steps.extract_branch.outputs.branch }} \
+        --single-branch ${{ steps.current_repo.outputs.auth_url }} $APP_DIR_PARENT/$APP_DIR &&
+        echo 'Done Cloning repository'
+        "
+        export docker_compose_commands="
           ls -al &&
-          echo "Done Testing ...."
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
-
-    # VARIABLE single quote
-    - name: TEST change directory with variable single quote
-      if: always()
-      env:
-        s_command: |-
-          echo "Testing ...." &&
-          cd '$APP_DIR_PARENT' &&
-          echo "Curren directory is $(pwd)" &&
-          echo "Curren directory lists" &&
+          sudo chmod 777 -R '$APP_DIR_PARENT/' &&
+          cd '/var/www/app' &&
           ls -al &&
-          echo "Done Testing ...."
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
+          echo 'Building docker stacks...' &&
+          sudo docker-compose build &&
+          sudo docker-compose up -d &&
+          echo 'Done Building docker stacks...' &&
+          sudo docker ps -a &&
+          sudo docker-compose down
+        "
+        echo "##[set-output name=git_clone;]$(echo $git_clone)"
+        echo "##[set-output name=docker_compose_commands;]$(echo $docker_compose_commands)"
 
-    # VARIABLE double quote
-    - name: TEST change directory with variable double quote
-      if: always()
-      env:
-        s_command: |-
-          echo "Testing ...." &&
-          cd "$APP_DIR_PARENT" &&
-          echo "Curren directory is $(pwd)" &&
-          echo "Curren directory lists" &&
-          ls -al &&
-          echo "Done Testing ...."
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
-
-    # VARIABLE double quote
-    - name: TEST change directory with eval variable interpolation
-      if: always()
-      env:
-        s_command: |-
-          echo "Testing ...." &&
-          eval cd "${APP_DIR_PARENT}" &&
-          echo "Curren directory is $(pwd)" &&
-          echo "Curren directory lists" &&
-          ls -al &&
-          echo "Done Testing ...."
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
-
-    # VARIABLE double quote
-    - name: TEST change directory with variable echo substition
-      if: always()
-      env:
-        s_command: |-
-          echo "Testing ...." &&
-          cd "$(echo $APP_DIR_PARENT)" &&
-          echo "Curren directory is $(pwd)" &&
-          echo "Curren directory lists" &&
-          ls -al &&
-          echo "Done Testing ...."
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
-
-    # VARIABLE double quote
-    - name: TEST change directory with variable echo substition and pipe
-      if: always()
-      env:
-        s_command: |-
-          echo "Testing ...." &&
-          cd $(echo $APP_DIR_PARENT | tr -d '\r') &&
-          echo "Curren directory is $(pwd)" &&
-          echo "Curren directory lists" &&
-          ls -al &&
-          echo "Done Testing ...."
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
-
-    # VARIABLE double quote
-    - name: TEST cd ${APP_DIR_PARENT}
-      if: always()
-      env:
-        s_command: |-
-          echo "Testing ...." &&
-          cd ${APP_DIR_PARENT} &&
-          echo "Curren directory is $(pwd)" &&
-          echo "Curren directory lists" &&
-          ls -al &&
-          echo "Done Testing ...."
-      run: |-
-        gcloud compute ssh $STAGING_NAME \
-        --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
-
-    # Calibrating directory
-    - name: End testing
-      if: always()
-      run: |-
-        exit 1
 
     # Update machine
     # NOTE: This is an overhead on 1st run, we might need to work around this
@@ -481,37 +269,20 @@ jobs:
 
     # Clone or pull repositor on machine
     - name: Update local repository
-      env:
-        s_command: |-
-          sudo rm -rf /var/www/app &&
-          echo ${{ steps.current_repo.outputs.auth_url }} &&
-          echo "Cloning repository" &&
-          sudo git clone -b ${{ steps.extract_branch.outputs.branch }} --single-branch ${{ steps.current_repo.outputs.auth_url }} /var/www/app &&
-          echo "Done Cloning repository"
       run: |-
         gcloud compute ssh $STAGING_NAME \
         --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command=${{ steps.generate_commands.outputs.git_clone }}
 
 
     # Docker compose
     - name: Build docker stacks
-      env:
-        s_command: |-
-          ls -al &&
-          sudo chmod 777 -R '$APP_DIR_PARENT/' &&
-          cd '/var/www/app' &&
-          ls -al &&
-          echo "Building docker stacks..." &&
-          sudo docker-compose build &&
-          sudo docker-compose up -d &&
-          echo "Done Building docker stacks..." &&
-          sudo docker ps -a &&
-          sudo docker-compose down
       run: |-
         gcloud compute ssh $STAGING_NAME \
         --project $PROJECT_ID --zone $ZONE \
-        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" --command=$s_command
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command=${{ steps.generate_commands.outputs.docker_compose_commands }}
 
     # Custom Post Process
     - name: Cleaning up
