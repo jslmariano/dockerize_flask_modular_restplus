@@ -230,32 +230,46 @@ jobs:
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
 
     # VARIABLE double quote
-    - name: TEST source normal
+    - name: TEST from dynamic export
       if: always()
       env:
         s_command: |-
           echo "Testing ...." &&
-          source /var/www &&
+          cd /var/www &&
           echo "Curren directory is $(pwd)" &&
           echo "Curren directory lists" &&
           ls -al &&
           echo "Done Testing ...."
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        export x_command='echo "Testing"... &&
+        cd /var/www &&
+        echo "Curren directory is $(pwd)" &&
+        echo "Curren directory lists" &&
+        ls -al &&
+        echo "Done testing"
+        '
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $x_command
 
     # VARIABLE double quote
-    - name: TEST source var
+    - name: TEST from dynamic w/ variable
       if: always()
       env:
         s_command: |-
           echo "Testing ...." &&
-          source $APP_DIR_PARENT &&
+          cd /var/www &&
           echo "Curren directory is $(pwd)" &&
           echo "Curren directory lists" &&
           ls -al &&
           echo "Done Testing ...."
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+        export x_command='echo "Testing"... &&
+        cd $APP_DIR_PARENT &&
+        echo "Curren directory is $(pwd)" &&
+        echo "Curren directory lists" &&
+        ls -al &&
+        echo "Done testing"
+        '
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $x_command
 
     # VARIABLE
     - name: TEST change directory with variable only
