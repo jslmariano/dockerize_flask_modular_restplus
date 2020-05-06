@@ -216,6 +216,10 @@ jobs:
         sudo mkdir -p /var/www/test/test
         cd $APP_DIR_PARENT
         ls -al
+        cd ..
+        ls -al
+        cd $(echo "$APP_DIR_PARENT")
+        ls -al
 
     # VARIABLE double quote
     - name: TEST normal
@@ -254,6 +258,15 @@ jobs:
         --project $PROJECT_ID --zone $ZONE \
         --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
         --command=cd $APP_DIR_PARENT && echo $(pwd)
+
+    # VARIABLE double quote
+    - name: TEST using --command quotes, v2
+      if: always()
+      run: |-
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command='cd $(echo $APP_DIR_PARENT) && echo $(pwd)'
 
     # VARIABLE double quote
     - name: TEST from dynamic export
