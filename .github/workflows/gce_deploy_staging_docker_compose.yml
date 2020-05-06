@@ -133,8 +133,8 @@ jobs:
             --metadata startup-script="${{ steps.ssh_custom_port.outputs.patch_command }}"
 
         echo "Rebooting staging instance.."
-        gcloud compute instances stop $STAGING_NAME --project $PROJECT_ID --zone $ZONE
-        gcloud compute instances start $STAGING_NAME --project $PROJECT_ID --zone $ZONE
+        # gcloud compute instances stop $STAGING_NAME --project $PROJECT_ID --zone $ZONE
+        # gcloud compute instances start $STAGING_NAME --project $PROJECT_ID --zone $ZONE
 
         echo "Done preparing staging instance"
 
