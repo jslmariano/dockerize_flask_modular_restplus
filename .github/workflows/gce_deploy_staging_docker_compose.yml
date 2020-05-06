@@ -237,13 +237,12 @@ jobs:
         "
         export docker_compose_commands="
           ls -al &&
-          sudo chmod 777 -R '$APP_DIR_PARENT/' &&
-          cd '/var/www/app' &&
+          cd $APP_DIR_PARENT/$APP_DIR &&
           ls -al &&
-          echo 'Building docker stacks...' &&
+          echo \"Building docker stacks...\" &&
           sudo docker-compose build &&
           sudo docker-compose up -d &&
-          echo 'Done Building docker stacks...' &&
+          echo \"Done Building docker stacks...\" &&
           sudo docker ps -a &&
           sudo docker-compose down
         "
@@ -292,7 +291,7 @@ jobs:
         gcloud compute ssh $STAGING_NAME \
         --project $PROJECT_ID --zone $ZONE \
         --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
-        --command=${{ steps.generate_commands.outputs.docker_compose_commands }}
+        --command='${{ steps.generate_commands.outputs.docker_compose_commands }}'
 
     # Custom Post Process
     - name: Cleaning up
