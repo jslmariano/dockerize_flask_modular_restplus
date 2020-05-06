@@ -208,10 +208,12 @@ jobs:
         echo $APP_DIR_PARENT
         echo "echo dir variable with single quote"
         echo '$APP_DIR_PARENT'
+        echo "echo dir variable with single quote interpolated"
+        echo '${APP_DIR_PARENT}'
         echo "echo dir variable with double quote"
         echo "$APP_DIR_PARENT"
         echo "Done DIR TEST"
-        mkdir -p /var/www/test/test
+        sudo mkdir -p /var/www/test/test
         cd $APP_DIR_PARENT
         ls -al
 
@@ -230,16 +232,28 @@ jobs:
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
 
     # VARIABLE double quote
-    - name: TEST direct 
+    - name: TEST direct
       if: always()
       run: |-
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- "cd $APP_DIR_PARENT && echo $(pwd)"
 
     # VARIABLE double quote
-    - name: TEST direct w/o quotes
+    - name: TEST using --command
       if: always()
       run: |-
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- cd $APP_DIR_PARENT && echo $(pwd)
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command="cd $APP_DIR_PARENT && echo $(pwd)"
+
+    # VARIABLE double quote
+    - name: TEST using --command w/o quotes
+      if: always()
+      run: |-
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command=cd $APP_DIR_PARENT && echo $(pwd)
 
     # VARIABLE double quote
     - name: TEST from dynamic export
@@ -252,7 +266,10 @@ jobs:
         ls -al &&
         echo "Done testing"
         '
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $x_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command=$x_command
 
     # VARIABLE double quote
     - name: TEST from dynamic w/ variable
@@ -265,7 +282,10 @@ jobs:
         ls -al &&
         echo "Done testing"
         '
-        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $x_command
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command=$x_command
 
     # VARIABLE
     - name: TEST change directory with variable only
