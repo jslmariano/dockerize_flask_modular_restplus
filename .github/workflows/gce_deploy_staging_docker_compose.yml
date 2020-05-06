@@ -230,7 +230,7 @@ jobs:
           ls -al /var/ &&
           echo ${{ steps.current_repo.outputs.auth_url }} &&
           echo "Cloning repository" &&
-          sudo git clone ${{ steps.current_repo.outputs.auth_url }} '$APP_DIR_PARENT/$APP_DIR' &&
+          sudo git clone -b ${{ steps.extract_branch.outputs.branch }} --single-branch ${{ steps.current_repo.outputs.auth_url }} /var/www/app &&
           echo "Done Cloning repository" &&
           ls -al /var/ &&
           cd '$APP_DIR/' &&
