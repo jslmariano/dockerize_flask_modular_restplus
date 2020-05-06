@@ -225,25 +225,11 @@ jobs:
     - name: Update local repository
       env:
         s_command: |-
-          ls -al /var/ &&
-          sudo rm -rf '$APP_DIR_PARENT/*' &&
-          ls -al /var/ &&
+          sudo rm -rf /var/www/app &&
           echo ${{ steps.current_repo.outputs.auth_url }} &&
           echo "Cloning repository" &&
           sudo git clone -b ${{ steps.extract_branch.outputs.branch }} --single-branch ${{ steps.current_repo.outputs.auth_url }} /var/www/app &&
-          echo "Done Cloning repository" &&
-          ls -al /var/ &&
-          cd '$APP_DIR/' &&
-          ls -al &&
-          sudo rm -rf .git/index.lock &&
-          sudo git reset --hard HEAD &&
-          echo ${{ steps.extract_branch.outputs.branch }} &&
-          sudo git fetch ${{ steps.current_repo.outputs.auth_url }} &&
-          sudo git checkout ${{ steps.extract_branch.outputs.branch }} &&
-          sudo git pull ${{ steps.current_repo.outputs.auth_url }} &&
-          sudo git reset --hard origin/${{ steps.extract_branch.outputs.branch }} &&
-          sudo git branch &&
-          sudo git status
+          echo "Done Cloning repository"
       run: |-
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
 
