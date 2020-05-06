@@ -238,16 +238,14 @@ jobs:
         gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
 
     # VARIABLE double quote
+    - name: TEST direct
+      if: always()
+      run: |-
+        gcloud compute ssh $STAGING_NAME --project $PROJECT_ID --zone $ZONE --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- "cd $APP_DIR_PARENT && echo $(pwd)"
+
+    # VARIABLE double quote
     - name: TEST from dynamic export
       if: always()
-      env:
-        s_command: |-
-          echo "Testing ...." &&
-          cd /var/www &&
-          echo "Curren directory is $(pwd)" &&
-          echo "Curren directory lists" &&
-          ls -al &&
-          echo "Done Testing ...."
       run: |-
         export x_command='echo "Testing"... &&
         cd /var/www &&
@@ -261,14 +259,6 @@ jobs:
     # VARIABLE double quote
     - name: TEST from dynamic w/ variable
       if: always()
-      env:
-        s_command: |-
-          echo "Testing ...." &&
-          cd /var/www &&
-          echo "Curren directory is $(pwd)" &&
-          echo "Curren directory lists" &&
-          ls -al &&
-          echo "Done Testing ...."
       run: |-
         export x_command='echo "Testing"... &&
         cd $APP_DIR_PARENT &&
