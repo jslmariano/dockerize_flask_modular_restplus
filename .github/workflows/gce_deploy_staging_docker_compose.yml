@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: GCE create staging vm and deploy app with docker compose
+name: GCE SSH GIT CLONE DOCKER COMPOSE
 
 on:
   push:
@@ -21,21 +21,25 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GCE_PROJECT }}
-  BASTION_IP: ${{ secrets.FIELDMAN_TEST_BASTION_IP }}
   # TODO: update to instance name
+  APP_DIR_PARENT: /var/www
+  APP_DIR: app
   VPC_NETWORK: batcave
   VPC_SUBNET: bc-asia-east1
   REGION: asia-east1
   ZONE: asia-east1-b
   STAGING_NAME: staging-docker
   STAGING_ALLOW_TAG: allow-ssh-staging-from-github
-  STAGING_CUSTOM_SSH_PORT: 1369
+  # You should remember this port, if not remembered,
+  # Go to your GCP firewall rules and check tcp value,
+  # or just re-create new STAGING_CUSTOM_SSH_PORT in GITHUB SECRETS
+  STAGING_CUSTOM_SSH_PORT: ${{ secrets.STAGING_CUSTOM_SSH_PORT }}
 
 jobs:
-  create-staging-ssh-deploy:
-    name: Create, Staging, SSH, and Deploy
+  ssh-git-clone-docker-compose:
+    name: SSH, Git Clone, and Docker Compose
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
 
     steps:
 
@@ -45,20 +49,20 @@ jobs:
     - name: Extract branch name
       shell: bash
       id: extract_branch
-      run: echo "##[set-output name=branch;]$(echo $(gcloud compute instances list \
-                  --filter="name:($STAGING_NAME)" \
-                  --format="value(status)"))"
-
-    - name: Getting staging vm status
-      shell: bash
-      id: staging_vm_status
       run: |-
-        echo "##[set-output name=status;]$(echo ${GITHUB_REF#refs/heads/deploy/})"
+        echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/deploy/})"
 
-    # Update GCP firewall
+    # Preview
     - name: Preview current branch
       run: |-
         echo "current branch:  ${{ steps.extract_branch.outputs.branch }}"
+
+    # Github IP
+    - name: Getting github ip
+      shell: bash
+      id: github_ip
+      run: |-
+        echo "##[set-output name=ip;]$(echo $(dig +short myip.opendns.com @resolver1.opendns.com))"
 
     # Setup gcloud CLI
     - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
@@ -68,7 +72,243 @@ jobs:
         service_account_key: ${{ secrets.GCE_SA_KEY }}
         project_id: ${{ secrets.GCE_PROJECT }}
 
-    # Start instance
-    - name: Bringing up instance
+    - name: Getting staging vm status
+      shell: bash
+      id: staging_vm_status
       run: |-
-        gcloud compute instances start --project $PROJECT_ID --zone $GCE_INSTANCE_ZONE $GCE_INSTANCE
+        export result=$(gcloud compute instances list \
+                  --filter="name:($STAGING_NAME)" \
+                  --format="value(status)")
+        echo "##[set-output name=status;]$(echo $result)"
+
+    # Preview status
+    - name: Preview staging status
+      run: |-
+        echo "current status:  ${{ steps.staging_vm_status.outputs.status }}"
+
+    # SSH port patcher
+    - name: Build patch for custom ssh port
+      shell: bash
+      id: ssh_custom_port
+      run: |-
+        export result="sed -re 's/^(\#?)(Port)([[:space:]]+)([[:digit:]]+)/\2\3$STAGING_CUSTOM_SSH_PORT/' -i.`date -I` /etc/ssh/sshd_config"
+        echo "##[set-output name=patch_command;]$(echo $result)"
+
+    # Start instance
+    - name: Prepare staging instance
+      id: prepare_staging
+      env:
+        STAGING_STATUS: ${{ steps.staging_vm_status.outputs.status }}
+        STAGING_MACHINE_TYPE: n1-standard-4 # Change prior to specs
+      run: |-
+
+        if [ -z "$STAGING_STATUS" ]; then
+          echo "Staging vm does not exist!, now creating..."
+          gcloud compute instances create $STAGING_NAME \
+            --project=$PROJECT_ID \
+            --zone=$ZONE \
+            --machine-type=$STAGING_MACHINE_TYPE \
+            --network=$VPC_NETWORK \
+            --subnet=$VPC_SUBNET \
+            --tags=allow-ssh-bastion,$STAGING_ALLOW_TAG \
+            --metadata=block-project-ssh-keys=true \
+            --image=debian-9-stretch-v20200420 \
+            --image-project=debian-cloud \
+            --scopes=https://www.googleapis.com/auth/cloud-platform \
+            --boot-disk-size=10GB \
+            --boot-disk-type=pd-ssd \
+            --boot-disk-device-name=$STAGING_NAME \
+            --reservation-affinity=any
+        fi
+
+        echo "Saving old metadata [startup-script] ..."
+        export old_startup_script=$(gcloud compute instances describe staging-docker \
+            --project $PROJECT_ID --zone $ZONE \
+            --format='value[](metadata.items.startup-script)')
+        echo "##[set-output name=old_startup_script;]$(echo $old_startup_script)"
+
+        echo "Updating staging metadata [startup-script] for patching ssh custom port..."
+        gcloud compute instances add-metadata $STAGING_NAME \
+            --project $PROJECT_ID --zone $ZONE \
+            --metadata startup-script="${{ steps.ssh_custom_port.outputs.patch_command }}"
+
+        echo "Rebooting staging instance.."
+        # gcloud compute instances stop $STAGING_NAME --project $PROJECT_ID --zone $ZONE
+        # gcloud compute instances start $STAGING_NAME --project $PROJECT_ID --zone $ZONE
+
+        echo "Done preparing staging instance"
+
+    - name: Getting staging vm external ip
+      shell: bash
+      id: staging_vm_ip
+      run: |-
+        export result=$(gcloud compute instances describe $STAGING_NAME \
+                --zone=$ZONE \
+                --format="value(networkInterfaces.accessConfigs[0].natIP)")
+        echo "##[set-output name=nat_ip;]$(echo $result)"
+
+    - name: Getting staging firewall status
+      shell: bash
+      id: staging_firewall_status
+      run: |-
+        export result=$(gcloud compute firewall-rules list \
+                --filter="name:($STAGING_ALLOW_TAG)" \
+                --format="value(disabled)")
+        echo "##[set-output name=disabled;]$(echo $result)"
+
+    # Patch firewall
+    - name: Patching up staging firewall
+      env:
+        STAGING_FIREWALL_DISABLED: ${{ steps.staging_firewall_status.outputs.disabled }}
+        STAGING_IP: ${{ steps.staging_vm_ip.outputs.nat_ip }}
+        TEMP_IP: ${{ steps.github_ip.outputs.ip }}
+      run: |-
+
+        if [[ -z $STAGING_IP ]]; then
+            echo "ERROR! Missing staging external ip!"
+            exit 1
+        fi
+
+        if [ -z "$STAGING_FIREWALL_DISABLED" ]; then
+            echo "Staging firewall does not exists!, now creating..."
+            gcloud compute firewall-rules create $STAGING_ALLOW_TAG \
+              --allow=tcp:$STAGING_CUSTOM_SSH_PORT \
+              --description='Allow ssh from github' \
+              --enable-logging \
+              --network=$VPC_NETWORK \
+              --source-ranges=$STAGING_IP \
+              --target-tags=$STAGING_ALLOW_TAG
+        fi
+
+        if [[ $STAGING_FIREWALL_DISABLED == "True" ]]; then
+            echo "Staging firewall is disabled, now enabling...."
+            gcloud compute firewall-rules update $STAGING_ALLOW_TAG \
+              --no-disabled
+        fi
+
+        echo "Patching staging firewall.."
+        gcloud compute firewall-rules update $STAGING_ALLOW_TAG \
+              --source-ranges $STAGING_IP,$TEMP_IP \
+              --allow tcp:$STAGING_CUSTOM_SSH_PORT
+        echo "Done patching staging firewall.."
+
+    - name: Getting current repository
+      shell: bash
+      id: current_repo
+      run: |-
+        export result="https://${{ github.repository_owner }}:${{ secrets.GPAT }}@github.com/${{ github.repository }}.git"
+        echo "##[set-output name=auth_url]$(echo $result)"
+
+    # Convert commands into actual string so it can be pass to ssh cleanly
+    # Apparently this is needed if command involves directory utilizations
+    - name: Generating commands
+      shell: bash
+      id: generate_commands
+      env:
+        s_command: |-
+          ls -al &&
+          sudo chmod 777 -R "$APP_DIR_PARENT/" &&
+          sudo chmod 777 -R $APP_DIR_PARENT/ &&
+          cd '/var/www/app' &&
+          ls -al &&
+          echo "Building docker stacks..." &&
+          sudo docker-compose build &&
+          sudo docker-compose up -d &&
+          echo "Done Building docker stacks..." &&
+          sudo docker ps -a &&
+          sudo docker-compose down
+      run: |-
+        echo "Test s_command from local env"
+        echo $s_command
+        export git_clone="
+        sudo rm -rf $APP_DIR_PARENT &&
+        echo $(pwd) &&
+        ls -al &&
+        sudo mkdir -p $APP_DIR_PARENT &&
+        sudo chmod 777 -R $APP_DIR_PARENT &&
+        cd $APP_DIR_PARENT &&
+        echo ${{ steps.current_repo.outputs.auth_url }} &&
+        echo \"Cloning repository\" &&
+        sudo git clone -b ${{ steps.extract_branch.outputs.branch }}
+        --single-branch ${{ steps.current_repo.outputs.auth_url }} $APP_DIR &&
+        cd $APP_DIR &&
+        ls -al &&
+        echo \"Done Cloning repository\"
+        " 
+        export docker_compose_commands="
+          ls -al &&
+          cd $APP_DIR_PARENT/$APP_DIR &&
+          ls -al &&
+          echo \"Building docker stacks...\" &&
+          sudo docker-compose build &&
+          sudo docker-compose up -d &&
+          echo \"Done Building docker stacks...\" &&
+          sudo docker ps -a &&
+          sudo docker-compose down
+        "
+        echo "##[set-output name=git_clone;]$(echo $git_clone)"
+        echo "##[set-output name=docker_compose_commands;]$(echo $docker_compose_commands)"
+
+
+    # Update machine
+    # NOTE: This is an overhead on 1st run, we might need to work around this
+    - name: Update machine
+      env:
+        s_command: |-
+          sudo apt install apt-transport-https ca-certificates curl software-properties-common gnupg2 -y &&
+          sudo curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add - &&
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" &&
+          sudo apt-get update -y &&
+          sudo apt-get upgrade -y &&
+          sudo apt-get install git -y &&
+          sudo apt-get install docker-ce -y &&
+          sudo usermod -aG docker root &&
+          sudo curl -L "https://github.com/docker/compose/releases/download/1.25.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose &&
+          sudo chmod +x /usr/local/bin/docker-compose &&
+          sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose &&
+          sudo docker -v &&
+          sudo docker-compose --version
+      run: |-
+        # NOTE here don't use --command if you are using local env variable,
+        # It will convert every hitespace to newlines!
+        # Work around is to use the traditional '--' SSH_ARGS
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" -- $s_command
+
+    # Clone or pull repositor on machine
+    - name: Update local repository
+      run: |-
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command='${{ steps.generate_commands.outputs.git_clone }}'
+
+
+    # Docker compose
+    - name: Build docker stacks
+      run: |-
+        gcloud compute ssh $STAGING_NAME \
+        --project $PROJECT_ID --zone $ZONE \
+        --ssh-flag="-p $STAGING_CUSTOM_SSH_PORT" \
+        --command='${{ steps.generate_commands.outputs.docker_compose_commands }}'
+
+    # Custom Post Process
+    - name: Cleaning up
+      if: always()
+      run: |-
+        echo "Cleanign up os login keys"
+        for i in $(gcloud compute os-login ssh-keys list | grep -v FINGERPRINT)
+        do
+            echo $i; gcloud compute os-login ssh-keys remove --key $i;
+        done
+        echo "Closing down firewall for github"
+        gcloud compute firewall-rules update $STAGING_ALLOW_TAG \
+        --source-ranges ${{ steps.staging_vm_ip.outputs.nat_ip }}
+        gcloud compute firewall-rules update $STAGING_ALLOW_TAG --disabled
+        echo "Updating staging metadata [startup-script] from it's old value..."
+        gcloud compute instances add-metadata $STAGING_NAME \
+            --project $PROJECT_ID --zone $ZONE \
+            --metadata startup-script="${{ steps.prepare_staging.outputs.old_startup_script }}"
+        echo "Custom clean up done"
+
